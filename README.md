@@ -39,20 +39,9 @@ After changes, run `docker compose up -d` again so containers are recreated as n
 2. Grafana: **Connections → Data sources** — **Prometheus** should exist (UID `prometheus`).
 3. Grafana: open the provisioned Docker/cAdvisor dashboard and confirm panels load.
 
-### Ports often used elsewhere (example Briq dev host)
+### Avoiding port conflicts
 
-If you remap observability ports, avoid colliding with services already on the host, for example:
-
-| Host ports | Typical use |
-|------------|----------------|
-| 5173, 5174 | Frontends |
-| 2130       | alya |
-| 8000–8001, 8004–8005 | briqpilot / pilot services |
-| 8085       | centauri-core (maps container 8080) |
-| 9050, 9051 | alioth-major, stella-polaris |
-| 5540       | redisinsight |
-
-Default stack ports **3000 / 9090 / 8080** are outside that set.
+This stack binds **3000** (Grafana), **9090** (Prometheus), and **8080** (cAdvisor) on the host by default. If any of those are already in use (for example by a web app, another metrics stack, or a local proxy), change the **left** side of each `ports` entry in [`docker-compose.yml`](docker-compose.yml)—for example `"3001:3000"` maps host port 3001 to Grafana’s container port 3000. Use `docker compose ps` or your OS tools to see what is listening before you start.
 
 ## macOS / Docker Desktop
 
@@ -65,3 +54,7 @@ Do not publish Grafana, Prometheus, or cAdvisor on untrusted networks without TL
 ## Scope
 
 This repo covers **metrics** only (availability-ish signals, CPU/memory, etc.). Logs (e.g. Loki) and traces (e.g. Tempo) are not included.
+
+## License
+
+Released into the public domain under [The Unlicense](https://unlicense.org/). See [LICENSE](LICENSE).
