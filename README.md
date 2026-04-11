@@ -47,6 +47,10 @@ This stack binds **3000** (Grafana), **9090** (Prometheus), and **8080** (cAdvis
 
 cAdvisor runs in the Linux VM. The bundled volume mounts work for many setups; if targets stay **DOWN** or container lists are empty, check Docker Desktop resources and [cAdvisor](https://github.com/google/cadvisor/blob/master/docs/running.md) run requirements.
 
+### Docker Engine 29+ (API 1.44)
+
+If cAdvisor logs show *client version 1.41 is too old … minimum … 1.44*, your Docker daemon is newer than the old `gcr.io/cadvisor/cadvisor` images support. This stack uses **`ghcr.io/google/cadvisor:0.56.2`**, which includes a compatible client. After changing the image, run `docker compose pull && docker compose up -d`.
+
 ## Security
 
 Do not publish Grafana, Prometheus, or cAdvisor on untrusted networks without TLS, strong passwords, and network controls. Set a strong Grafana password in `docker-compose.yml` before doing so.

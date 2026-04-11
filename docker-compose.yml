@@ -1,6 +1,7 @@
 services:
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    # ghcr.io ships current releases; gcr.io/cadvisor/cadvisor:v0.49.x is too old for Docker API ≥1.44 (Engine 29+).
+    image: ghcr.io/google/cadvisor:0.56.2
     privileged: true
     restart: unless-stopped
     ports:
