@@ -27,7 +27,7 @@ services:
       - /dev/disk/:/dev/disk:ro
 
   node-exporter:
-    image: prom/node-exporter:v1.13.0
+    image: prom/node-exporter:v1.12.1
     restart: unless-stopped
     mem_limit: 64m
     cpus: 0.2
