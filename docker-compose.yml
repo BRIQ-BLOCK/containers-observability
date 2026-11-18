@@ -1,11 +1,24 @@
 services:
   cadvisor:
-    # ghcr.io ships current releases; gcr.io/cadvisor/cadvisor:v0.49.x is too old for Docker API ≥1.44 (Engine 29+).
     image: ghcr.io/google/cadvisor:0.56.2
     privileged: true
     restart: unless-stopped
+    mem_limit: 128m
+    cpus: 0.25
+    environment:
+      GOMAXPROCS: "1"
+      GOMEMLIMIT: 96MiB
+    command:
+      - --docker_only=true
+      - --store_container_labels=false
+      - --whitelisted_container_labels=com.docker.compose.service
+      - --enable_metrics=cpu,memory,network,diskIO,oom_event
+      - --housekeeping_interval=30s
+      - --max_housekeeping_interval=60s
+      - --storage_duration=1m0s
+      - --enable_load_reader=false
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
@@ -13,31 +26,72 @@ services:
       - /var/lib/docker/:/var/lib/docker:ro
       - /dev/disk/:/dev/disk:ro
 
+  node-exporter:
+    image: prom/node-exporter:v1.13.0
+    restart: unless-stopped
+    mem_limit: 64m
+    cpus: 0.2
+    pid: host
+    environment:
+      GOMAXPROCS: "1"
+      GOMEMLIMIT: 40MiB
+    command:
+      - --path.rootfs=/host
+      - --collector.disable-defaults
+      - --collector.cpu
+      - --collector.meminfo
+      - --collector.loadavg
+      - --collector.filesystem
+      - --collector.diskstats
+      - --collector.netdev
+      - --collector.stat
+      - --collector.uname
+      - --collector.time
+      - --collector.pressure
+      - --collector.vmstat
+      - --collector.filesystem.mount-points-exclude=^/(dev|proc|run|sys|snap|var/lib/docker/.+)($|/)
+    volumes:
+      - /:/host:ro,rslave
+
   prometheus:
     image: prom/prometheus:v2.55.1
     restart: unless-stopped
+    mem_limit: 384m
     ports:
-      - "9090:9090"
+      - "127.0.0.1:9090:9090"
+    extra_hosts:
+      - "metrics.briq-large.internal:172.31.44.6"
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/secrets:/etc/prometheus/secrets:ro
+      - prometheus-data:/prometheus
     command:
       - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=15d
+      - --storage.tsdb.retention.size=3GB
       - --web.enable-lifecycle
     depends_on:
       - cadvisor
+      - node-exporter
 
   grafana:
     image: grafana/grafana:11.3.1
     restart: unless-stopped
+    mem_limit: 256m
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: admin
       GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
     volumes:
+      - grafana-data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on:
       - prometheus
+
+volumes:
+  prometheus-data:
+  grafana-data:

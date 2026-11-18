@@ -20,7 +20,7 @@ Then open:
 | Prometheus| http://localhost:9090  |
 | cAdvisor  | http://localhost:8080  |
 
-Default Grafana login is **admin** / **admin** (set in [`docker-compose.yml`](docker-compose.yml) under the `grafana` service). Change `GF_SECURITY_ADMIN_USER` and `GF_SECURITY_ADMIN_PASSWORD` there before exposing the stack beyond localhost.
+On a fresh volume Grafana starts with **admin** / **admin** and asks for a new password on first login. Users and settings persist in the `grafana-data` volume.
 
 The dashboard **Cadvisor exporter** (Grafana.com [14282](https://grafana.com/grafana/dashboards/14282-docker-monitoring-with-prometheus/), vendored as `grafana/dashboards/docker-monitoring.json`) should appear under **Dashboards** after startup.
 
@@ -29,7 +29,6 @@ The dashboard **Cadvisor exporter** (Grafana.com [14282](https://grafana.com/gra
 All defaults live in [`docker-compose.yml`](docker-compose.yml); there is no `.env` file.
 
 - **Host ports** — edit the `ports` mapping for each service (left side is the host port). For example, use `"3001:3000"` for Grafana if **3000** is already taken.
-- **Grafana admin** — edit `GF_SECURITY_ADMIN_USER` and `GF_SECURITY_ADMIN_PASSWORD` under the `grafana` → `environment` block.
 
 After changes, run `docker compose up -d` again so containers are recreated as needed.
 
@@ -62,3 +61,9 @@ This repo covers **metrics** only (availability-ish signals, CPU/memory, etc.). 
 ## License
 
 Released into the public domain under [The Unlicense](https://unlicense.org/). See [LICENSE](LICENSE).
+
+## Remote hosts (briq-large)
+
+briq-large runs `node_exporter` (127.0.0.1:9100) and `cadvisor` (127.0.0.1:8089) as systemd services with `MemoryMax`/`CPUQuota` caps. Its nginx serves them only to briq's private IP, behind basic auth, under the internal name `metrics.briq-large.internal` (`/node/metrics`, `/cadvisor/metrics`). Prometheus resolves that name through `extra_hosts` and reads the password from `prometheus/secrets/briq-large.pass`, which is gitignored and lives only on the server.
+
+All published ports bind to 127.0.0.1. Every service has a memory cap so the stack cannot starve application containers.
