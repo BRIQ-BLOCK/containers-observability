@@ -44,3 +44,31 @@ scrape_configs:
     relabel_configs:
       - target_label: instance
         replacement: briq-large
+
+  - job_name: livekit-briq-media
+    scrape_interval: 30s
+    scheme: https
+    metrics_path: /livekit/metrics
+    basic_auth:
+      username: prometheus
+      password_file: /etc/prometheus/secrets/briq-media.pass
+    static_configs:
+      - targets: ["media-metrics.briq.tz:443"]
+        labels: {host: briq-media}
+    relabel_configs:
+      - target_label: instance
+        replacement: briq-media
+
+  - job_name: node-briq-media
+    scrape_interval: 30s
+    scheme: https
+    metrics_path: /node/metrics
+    basic_auth:
+      username: prometheus
+      password_file: /etc/prometheus/secrets/briq-media.pass
+    static_configs:
+      - targets: ["media-metrics.briq.tz:443"]
+        labels: {host: briq-media}
+    relabel_configs:
+      - target_label: instance
+        replacement: briq-media
